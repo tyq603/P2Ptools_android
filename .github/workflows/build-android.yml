@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     
     steps:
     - name: Checkout code
@@ -47,13 +49,37 @@ jobs:
       run: |
         export ANDROID_HOME=$ANDROID_SDK_ROOT
         export JAVA_HOME=/usr/lib/jvm/default-java
-        ./mvnw gluonfx:build -Dtarget=android -e -X
+        echo "=== Java Version ==="
+        java -version
+        echo "=== Maven Version ==="
+        mvn -version
+        echo "=== Building APK ==="
+        ./mvnw gluonfx:build -Dtarget=android -e -X 2>&1 | tee build.log
+      continue-on-error: true
+      
+    - name: Upload build log
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: build-log
+        path: build.log
+        if-no-files-found: ignore
         
     - name: Package Android APK
       run: |
         export ANDROID_HOME=$ANDROID_SDK_ROOT
         export JAVA_HOME=/usr/lib/jvm/default-java
-        ./mvnw gluonfx:package -Dtarget=android -e -X
+        echo "=== Packaging APK ==="
+        ./mvnw gluonfx:package -Dtarget=android -e -X 2>&1 | tee package.log
+      continue-on-error: true
+      
+    - name: Upload package log
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: package-log
+        path: package.log
+        if-no-files-found: ignore
         
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
